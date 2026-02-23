@@ -32,11 +32,27 @@ button{margin-top:10px;padding:8px 14px;border:0;border-radius:10px;background:w
 <script>
 const ENDPOINT="https://script.google.com/macros/s/AKfycbxkmxnDtSlfXa008qh_cS2dneTVweaQtMVTIUmOWR1PkAWlHX2EQkd86HwN5X9vZrCp/exec";
 
-function loadJSONP(){
-  return new Promise((resolve,reject)=>{
-    const cb="cb_"+Date.now();
-    const s=document.createElement("script");
-    window[cb]=d=>{delete window[cb];s.remove();resolve(d)};
+async function loadJSONP(){
+  // JSONP kaldırıldı → güvenli redirect takip eden fetch
+  const res = await fetch(ENDPOINT, {
+    method: 'GET',
+    redirect: 'follow',
+    headers: { 'Accept': 'application/json' }
+  });
+
+  if(!res.ok) throw new Error('HTTP '+res.status);
+
+  const text = await res.text();
+
+  // bazı Apps Scriptler text/plain döner → parse manuel
+  try{
+    return JSON.parse(text);
+  }catch{
+    // bazen google güvenlik prefix koyar
+    const clean = text.replace(/^.*?\{/, '{');
+    return JSON.parse(clean);
+  }
+};
     s.src=ENDPOINT+(ENDPOINT.includes("?")?"&":"?")+"callback="+cb;
     s.onerror=()=>{delete window[cb];s.remove();reject()};
     document.body.appendChild(s);
