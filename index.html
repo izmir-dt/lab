@@ -43,19 +43,12 @@ async function fetchData(){
 }
 
 async function loadPlays(){
+  if(location.protocol==='file:'){
+    document.getElementById('statusText').textContent='Bu sayfa bilgisayardan açıldı. Güvenlik nedeniyle veri okunamaz. Lütfen GitHub Pages veya localhost üzerinden aç.';
+    return;
+  }
+
   const status=document.getElementById('statusText');
-  status.textContent='Yükleniyor...';
-  try{
-    const data=await fetchData();
-    if(!Array.isArray(data)) throw new Error('Format hatası');
-
-    const map=new Map();
-    data.forEach(r=>{
-      const name=r.Oyun||r.oyun||r.Play||r.play;
-      if(!name) return;
-      map.set(name,(map.get(name)||0)+1);
-    });
-
     const box=document.getElementById('repertuvarCards');
     box.innerHTML='';
     map.forEach((count,name)=>{
