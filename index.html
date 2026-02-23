@@ -30,52 +30,53 @@ button{margin-top:10px;padding:8px 14px;border:0;border-radius:10px;background:w
 </div>
 
 <script>
-const ENDPOINT="https://script.google.com/macros/s/AKfycbxkmxnDtSlfXa008qh_cS2dneTVweaQtMVTIUmOWR1PkAWlHX2EQkd86HwN5X9vZrCp/exec";
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbxkmxnDtSlfXa008qh_cS2dneTVweaQtMVTIUmOWR1PkAWlHX2EQkd86HwN5X9vZrCp/exec";
 
-async function loadJSONP(){
-  // JSONP kaldırıldı → güvenli redirect takip eden fetch
-  const res = await fetch(ENDPOINT, {
-    method: 'GET',
-    redirect: 'follow',
-    headers: { 'Accept': 'application/json' }
-  });
-
+async function fetchData(){
+  const res = await fetch(ENDPOINT,{method:'GET',redirect:'follow'});
   if(!res.ok) throw new Error('HTTP '+res.status);
-
   const text = await res.text();
-
-  // bazı Apps Scriptler text/plain döner → parse manuel
-  try{
-    return JSON.parse(text);
-  }catch{
-    // bazen google güvenlik prefix koyar
-    const clean = text.replace(/^.*?\{/, '{');
+  try{return JSON.parse(text);}catch{
+    const clean=text.replace(/^.*?\[/,'[').replace(/^.*?\{/,'{');
     return JSON.parse(clean);
   }
-};
-    s.src=ENDPOINT+(ENDPOINT.includes("?")?"&":"?")+"callback="+cb;
-    s.onerror=()=>{delete window[cb];s.remove();reject()};
-    document.body.appendChild(s);
-  });
 }
 
 async function loadPlays(){
-  const status=document.getElementById("statusText");
-  status.textContent="Yükleniyor...";
+  const status=document.getElementById('statusText');
+  status.textContent='Yükleniyor...';
   try{
-    const data=await loadJSONP();
-    if(!Array.isArray(data)) throw "format";
+    const data=await fetchData();
+    if(!Array.isArray(data)) throw new Error('Format hatası');
+
     const map=new Map();
-    data.forEach(r=>{const n=r.Oyun||r.oyun||r.Play;if(n)map.set(n,(map.get(n)||0)+1)});
-    const box=document.getElementById("repertuvarCards");
-    box.innerHTML="";
-    map.forEach((c,n)=>{box.innerHTML+=`<div class='card'><h3>${n}</h3><div class='meta'>${c} kişi</div></div>`});
-    status.textContent=map.size+" oyun yüklendi";
-  }catch(e){status.textContent="Veri alınamadı"}
+    data.forEach(r=>{
+      const name=r.Oyun||r.oyun||r.Play||r.play;
+      if(!name) return;
+      map.set(name,(map.get(name)||0)+1);
+    });
+
+    const box=document.getElementById('repertuvarCards');
+    box.innerHTML='';
+    map.forEach((count,name)=>{
+      const el=document.createElement('div');
+      el.className='card';
+      el.innerHTML=`<h3>${name}</h3><div class='meta'>${count} kişi</div>`;
+      box.appendChild(el);
+    });
+
+    status.textContent=map.size+' oyun yüklendi';
+  }catch(e){
+    console.error(e);
+    status.textContent='Veri alınamadı';
+  }
 }
 
-document.getElementById("loadBtn").onclick=loadPlays;
-console.assert(document.getElementById("loadBtn"),"buton yok");
+window.addEventListener('DOMContentLoaded',()=>{
+  const btn=document.getElementById('loadBtn');
+  console.assert(btn,'Load butonu bulunamadı');
+  btn.addEventListener('click',loadPlays);
+});
 </script>
 </body>
 </html>
